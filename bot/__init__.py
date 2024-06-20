@@ -557,7 +557,6 @@ bot = tgClient(
     max_concurrent_transmissions=10,
 ).start()
 bot_name = bot.me.username
-job_queue = tgClient.job_queue
 
 scheduler = AsyncIOScheduler(timezone=str(get_localzone()), event_loop=bot_loop)
 
