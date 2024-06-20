@@ -101,7 +101,7 @@ if len(DATABASE_URL) == 0:
 if DATABASE_URL:
     try:
         conn = MongoClient(DATABASE_URL, server_api=ServerApi("1"))
-        db = conn.mltb
+        db = conn.bbots
         current_config = dict(dotenv_values("config.env"))
         old_config = db.settings.deployConfig.find_one({"_id": bot_id})
         if old_config is None:
@@ -371,13 +371,26 @@ MEDIA_GROUP = MEDIA_GROUP.lower() == "true"
 USER_TRANSMISSION = environ.get("USER_TRANSMISSION", "")
 USER_TRANSMISSION = USER_TRANSMISSION.lower() == "true" and IS_PREMIUM_USER
 
-BASE_URL_PORT = environ.get("BASE_URL_PORT", "")
-BASE_URL_PORT = 80 if len(BASE_URL_PORT) == 0 else int(BASE_URL_PORT)
 
-BASE_URL = environ.get("BASE_URL", "").rstrip("/")
-if len(BASE_URL) == 0:
-    log_warning("BASE_URL not provided!")
-    BASE_URL = ""
+BASE_URL = environ.get('BASE_URL', None).rstrip("/")
+try:
+    if len(BASE_URL) == 0:
+        log_warning('BASE_URL not provided!')
+        raise TypeError
+    BASE_URL = BASE_URL.rstrip("/")
+except TypeError:
+    BASE_URL = None
+
+BASE_URL_PORT = environ.get('BASE_URL_PORT', None)
+if BASE_URL_PORT is not None and BASE_URL is not None:
+    while True:
+        try:
+            rget(BASE_URL).status_code
+            sleep(600)
+        except Exception as e:
+            sleep(2)
+            continue
+
 
 UPSTREAM_REPO = environ.get("UPSTREAM_REPO", "")
 if len(UPSTREAM_REPO) == 0:
@@ -485,10 +498,10 @@ if ospath.exists("list_drives.txt"):
 
 if BASE_URL:
     Popen(
-        f"gunicorn web.wserver:app --bind 0.0.0.0:{BASE_URL_PORT} --worker-class gevent",
+        f"gunicorn web.wserver:app --bind 0.0.0.0:{BASE_URL_PORT} --keep-alive 5 --worker-class gevent",
         shell=True,
     )
-
+alive = Popen(["python3", "alive.py"])
 if ospath.exists("accounts.zip"):
     if ospath.exists("accounts"):
         run(["rm", "-rf", "accounts"])
@@ -544,6 +557,7 @@ bot = tgClient(
     max_concurrent_transmissions=10,
 ).start()
 bot_name = bot.me.username
+job_queue = tgClient.job_queue
 
 scheduler = AsyncIOScheduler(timezone=str(get_localzone()), event_loop=bot_loop)
 
