@@ -371,26 +371,13 @@ MEDIA_GROUP = MEDIA_GROUP.lower() == "true"
 USER_TRANSMISSION = environ.get("USER_TRANSMISSION", "")
 USER_TRANSMISSION = USER_TRANSMISSION.lower() == "true" and IS_PREMIUM_USER
 
+BASE_URL_PORT = environ.get("BASE_URL_PORT", "")
+BASE_URL_PORT = 80 if len(BASE_URL_PORT) == 0 else int(BASE_URL_PORT)
 
-BASE_URL = environ.get('BASE_URL', None).rstrip("/")
-try:
-    if len(BASE_URL) == 0:
-        log_warning('BASE_URL not provided!')
-        raise TypeError
-    BASE_URL = BASE_URL.rstrip("/")
-except TypeError:
-    BASE_URL = None
-
-BASE_URL_PORT = environ.get('BASE_URL_PORT', None)
-if BASE_URL_PORT is not None and BASE_URL is not None:
-    while True:
-        try:
-            rget(BASE_URL).status_code
-            sleep(600)
-        except Exception as e:
-            sleep(2)
-            continue
-
+BASE_URL = environ.get("BASE_URL", "").rstrip("/")
+if len(BASE_URL) == 0:
+    log_warning("BASE_URL not provided!")
+    BASE_URL = ""
 
 UPSTREAM_REPO = environ.get("UPSTREAM_REPO", "")
 if len(UPSTREAM_REPO) == 0:
